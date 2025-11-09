@@ -1,0 +1,6 @@
+# Secrets and tokens
+client_secret.json
+data/tokens/
+*.json.secret
+.env
+.env.*.local
