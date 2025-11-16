@@ -9,6 +9,12 @@ FastMCP
 PyPI
 +2
 
+ti run the server 
+uvicorn server:app --host 127.0.0.1 --port 8080
+
+optional 
+uvicorn server:app --host 127.0.0.1 --port 8080 --timeout-waiter=5 --timeout-keep-alive=30
+
 ## HTTP transport via ASGI:
 recommended over legacy SSE; clean app = mcp.http_app() for Uvicorn. 
 FastMCP

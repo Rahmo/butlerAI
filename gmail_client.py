@@ -67,8 +67,9 @@ def search_threads(service, q: str, max_results: int = 500) -> List[str]:
 
 def ensure_label(service, label_name: str) -> str:
     labels = service.users().labels().list(userId="me").execute().get("labels", [])
+    # Case-insensitive search since Gmail treats labels as case-insensitive
     for lb in labels:
-        if lb["name"] == label_name:
+        if lb["name"].lower() == label_name.lower():
             return lb["id"]
     created = service.users().labels().create(userId="me", body={
         "name": label_name,

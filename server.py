@@ -5,14 +5,13 @@ from starlette.routing import Route
 from starlette.responses import JSONResponse
 from fastmcp import FastMCP
 from dotenv import load_dotenv
-
-import re
 import requests
 from gmail_client import gmail_service, search_threads, ensure_label, batch_label, batch_delete
 from rules import DEFAULT_RULES
-
+import logging
+import re
 load_dotenv()
-REVIEW_LABEL = os.getenv("REVIEW_LABEL", "Trash-Candidate")
+REVIEW_LABEL = os.getenv("REVIEW_LABEL", "trash-can")
 
 mcp = FastMCP("gmail-cleanup")
 
@@ -21,20 +20,49 @@ mcp = FastMCP("gmail-cleanup")
 async def health(_req) -> PlainTextResponse:
     return PlainTextResponse("ok")
 
+
 @mcp.tool
 def preview_cleanup(rules: Optional[List[str]] = None, limit_per_rule: int = 500) -> Dict[str, Any]:
     """
     Dry-run. Return counts and sample thread IDs that match cleanup rules.
     """
-    svc = gmail_service(modify=False)
+
+    logger = logging.getLogger(__name__)
+
+    try:
+        svc = gmail_service(modify=False)
+    except Exception as e:
+        logger.error(f"Failed to initialize Gmail service: {e}")
+        return {"error": "Failed to connect to Gmail service", "total_hits": 0, "by_rule": {}}
+
     rules = rules or DEFAULT_RULES
     summary = {}
     total = 0
+    errors = []
+
     for rule in rules:
-        ids = search_threads(svc, rule, max_results=limit_per_rule)
-        summary[rule] = {"count": len(ids), "sample": ids[:10]}
-        total += len(ids)
-    return {"total_hits": total, "by_rule": summary, "review_label": REVIEW_LABEL}
+        try:
+            logger.debug(f"Processing rule: {rule}")
+            ids = search_threads(svc, rule, max_results=limit_per_rule)
+            summary[rule] = {"count": len(ids), "sample": ids[:10]}
+            total += len(ids)
+            logger.debug(f"Rule '{rule}' matched {len(ids)} threads")
+        except Exception as e:
+            logger.error(f"Error processing rule '{rule}': {e}")
+            errors.append(f"Rule '{rule}': {str(e)}")
+            summary[rule] = {"count": 0, "sample": [], "error": str(e)}
+
+    result = {
+        "total_hits": total,
+        "by_rule": summary,
+        "review_label": REVIEW_LABEL
+    }
+
+    if errors:
+        result["errors"] = errors
+
+    return result
+
 
 @mcp.tool
 def label_candidates(rules: Optional[List[str]] = None, review_label: Optional[str] = None) -> Dict[str, Any]:

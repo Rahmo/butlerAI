@@ -60,13 +60,20 @@ python client/async_run_client.py --list
 ```powershell
 python client/async_run_client.py --tool preview_cleanup limit_per_rule=50
 
+1. 
+    - `rules` (optional)
+    - (optional, default 500) `limit_per_rule`
+
 python client/async_run_client.py --tool preview_cleanup --args '{\"limit_per_rule\": 50}'
-python client/async_run_client.py --tool preview_cleanup --args '{\"limit_per_rule\": 100}'
-python client/async_run_client.py --tool preview_cleanup --args '{\"limit_per_rule\": 250}'
+
 ```
 
 - `label_candidates(rules?, review_label?)`
 ```powershell
+1. **`label_candidates`** - Actually applies labels (no dry-run option)
+    - `rules` (optional)
+    - (optional) `review_label`
+
 python client/async_run_client.py --tool label_candidates review_label=trash-candidate
 python client/async_run_client.py --tool label_candidates --args '{\"review_label\": \"Trash-Candidate\"}'
 ```
@@ -74,6 +81,12 @@ python client/async_run_client.py --tool label_candidates --args '{\"review_labe
 - `delete_labeled(label?, older_than_days?, dry_run?)`
   - Dry run (recommended first):
 ```powershell
+1. **`delete_labeled`** - Has dry-run functionality
+    - `label` (optional)
+    - (optional, default 7) `older_than_days`
+    - (optional, default True) `dry_run`
+    - `permanent` (optional, default False)
+
 python client/async_run_client.py --tool delete_labeled label=Trash-Candidate older_than_days=0 dry_run=true
  
 python client/async_run_client.py --tool delete_labeled --args '{\"older_than_days\": 7, \"dry_run\": true}'
@@ -90,6 +103,18 @@ python client/async_run_client.py --tool delete_labeled --args '{\"older_than_da
 python client/async_run_client.py --tool top_noisy_senders --args '{\"since_days\": 30, \"max_senders\": 10}'
 ```
 
+- `auto_unsubscribe(max_emails?, dry_run?)`
+```powershell
+python client/async_run_client.py --tool auto_unsubscribe --args '{\"max_emails\": 1000, \"dry_run\": true}'
+```
+# Dry run (default) - just see what unsubscribe links are found
+python client/async_run_client.py --tool auto_unsubscribe
+
+# With custom parameters
+python client/async_run_client.py --tool auto_unsubscribe max_emails=1000 dry_run=true
+
+# Actually perform unsubscribes (use with caution!)
+python client/async_run_client.py --tool auto_unsubscribe dry_run=false
 ## Notes
 - The client defaults to `--server http://127.0.0.1:8080` and `--path /mcp`.
 - First Gmail access will trigger OAuth in your browser and cache tokens under `TOKEN_DIR`.
